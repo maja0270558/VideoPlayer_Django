@@ -8,34 +8,47 @@
 
 import UIKit
 import AVFoundation
-
+extension ViewController: DjangoPlayerDelegate {
+    func playerPlayingDidChange(isPlaying: Bool) {
+        if isPlaying {
+            playButton.setBackgroundImage(#imageLiteral(resourceName: "stop"), for: .normal)
+        } else {
+            playButton.setBackgroundImage(#imageLiteral(resourceName: "play_button"), for: .normal)
+        }
+    }
+    
+    func playerMutedDidChange(isMuted: Bool) {
+        if isMuted {
+            muteButton.setBackgroundImage(#imageLiteral(resourceName: "volume_off"), for: .normal)
+        } else {
+            muteButton.setBackgroundImage(#imageLiteral(resourceName: "volume_up"), for: .normal)
+        }
+    }
+    
+    func playerDidRotate(isLandscape: Bool) {
+        if isLandscape {
+            fullButton.setBackgroundImage(#imageLiteral(resourceName: "full_screen_exit"), for: .normal)
+        } else {
+            fullButton.setBackgroundImage(#imageLiteral(resourceName: "full_screen_button"), for: .normal)
+        }
+    }
+    
+    func playerCurrentTime(currentTime: String, remainingTime: String, currentTimeFloat: Float,totalDurationTime: Float) {
+        self.currentTimeLabel.text = currentTime
+        self.remainingTimeLabel.text = remainingTime
+        self.videoProgressSlider.maximumValue = totalDurationTime
+        self.videoProgressSlider.minimumValue = 0
+        self.videoProgressSlider.value = currentTimeFloat
+    }
+    
+    
+}
 class ViewController: UIViewController {
-    let seekDuration: Float64 = 10
-    var videoLayer: AVPlayerLayer?
-    var player: AVPlayer?
-    var isPlaying: Bool! {
-        didSet {
-            if isPlaying {
-                playButton.setBackgroundImage(#imageLiteral(resourceName: "stop"), for: .normal)
-            } else {
-                playButton.setBackgroundImage(#imageLiteral(resourceName: "play_button"), for: .normal)
-            }
-        }
-    }
-    var isLandscape = false {
-        didSet {
-            if isLandscape {
-                fullButton.setBackgroundImage(#imageLiteral(resourceName: "full_screen_exit"), for: .normal)
-            } else {
-                fullButton.setBackgroundImage(#imageLiteral(resourceName: "full_screen_button"), for: .normal)
-            }
-        }
-    }
+    var myPlayer: DjangoPlayer = DjangoPlayer()
     var isButtonAlpha = false
-    var playerObsever: Any?
-    let lValue = UIInterfaceOrientation.landscapeLeft.rawValue
-    let pValue = UIInterfaceOrientation.portrait.rawValue
     var centerLabel = UILabel()
+    var buttons = [UIButton]()
+    
     @IBOutlet weak var searchTextField: UITextField!
     @IBOutlet weak var videoProgressSlider: UISlider!
     @IBOutlet weak var remainingTimeLabel: UILabel!
@@ -47,84 +60,52 @@ class ViewController: UIViewController {
     @IBOutlet weak var backButton: UIButton!
     @IBOutlet weak var forwardButton: UIButton!
     @IBOutlet weak var fullButton: UIButton!
-    var buttons = [UIButton]()
     @IBAction func searchURLAction(_ sender: UIButton) {
         if let urlString = searchTextField.text  , urlString != "" {
             if let searchURL = URL(string: searchTextField.text!) {
-                playVideoURL(url: searchURL)
+                myPlayer.playVideoURL(url: searchURL, onView: centerView)
             }
         }
     }
     @IBAction func volumeButton(_ sender: UIButton) {
-        if let videoPlayer = player {
-            if videoPlayer.isMuted {
-                videoPlayer.isMuted = false
-                sender.setBackgroundImage(#imageLiteral(resourceName: "volume_up"), for: .normal)
-            } else {
-                videoPlayer.isMuted = true
-                sender.setBackgroundImage(#imageLiteral(resourceName: "volume_off"), for: .normal)
-            }
-        }
+        myPlayer.nowisMuted = !myPlayer.nowisMuted
     }
     @IBAction func rewindButton(_ sender: Any) {
-        if let videoPlayer = player {
-            let playerCurrentTime = CMTimeGetSeconds(videoPlayer.currentTime())
-            var newTime = playerCurrentTime - seekDuration
-            if newTime < 0 {
-                newTime = 0
-            }
-            let cmTimeConvert : CMTime = CMTimeMake(Int64(newTime * 1000 as Float64), 1000)
-            videoPlayer.seek(to: cmTimeConvert, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero)
-        }
+        myPlayer.rewind()
     }
     @IBAction func playOrPauseButton(_ sender: UIButton) {
-        if let videoPlayer = player {
-            if isPlaying {
-                player?.pause()
-                isPlaying = false
-            } else {
-                player?.play()
-                isPlaying = true
-            }
-        }
+        myPlayer.isPlaying = !myPlayer.isPlaying
     }
     @IBAction func fastForwardButton(_ sender: UIButton) {
-        if let videoPlayer = player {
-            guard let totalDuration  = videoPlayer.currentItem?.duration else{
-                return
-            }
-            let playerCurrentTime = CMTimeGetSeconds(videoPlayer.currentTime())
-            let newTime = playerCurrentTime + seekDuration
-            if newTime < (CMTimeGetSeconds(totalDuration) - seekDuration) {
-                let cmTimeConvert: CMTime = CMTimeMake(Int64(newTime * 1000 as Float64), 1000)
-                videoPlayer.seek(to: cmTimeConvert, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero)
-            }
-        }
+        myPlayer.fastForward()
     }
-    
     @IBAction func fullScreenButton(_ sender: UIButton) {
-        if let videoPlayer = player {
-            if isLandscape {
-                isLandscape = false
-                UIDevice.current.setValue(pValue, forKey: "orientation")
-            } else {
-                isLandscape = true
-                UIDevice.current.setValue(lValue, forKey: "orientation")
-            }
-        }
+        myPlayer.rotate()
+    }
+    override func viewDidLayoutSubviews() {
+        myPlayer.videoLayer?.frame = centerView.bounds
+        centerLabel.center = centerView.center
+    }
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupNavigationColor()
+        setupButtons()
+        setupGesture()
+        setupCenterLabel()
+        setupSliderTarget()
+        myPlayer.delegate = self
     }
     override func willTransition(to newCollection: UITraitCollection, with coordinator: UIViewControllerTransitionCoordinator) {
         if UIDevice.current.orientation.isLandscape {
-            if player == nil {
+            if myPlayer.player == nil {
                 centerLabel.text = "目前尚無影片可播放"
             } else {
                 centerLabel.text = ""
             }
-            
             centerView.backgroundColor = UIColor.black
-            isLandscape = true
             currentTimeLabel.textColor = UIColor.white
             remainingTimeLabel.textColor = UIColor.white
+            myPlayer.isLandscape = true
             self.navigationController?.navigationBar.isHidden = true
             searchTextField.isHidden = true
             searchButton.isHidden = true
@@ -133,9 +114,9 @@ class ViewController: UIViewController {
             })
         } else {
             centerView.backgroundColor = UIColor.white
-            isLandscape = false
             currentTimeLabel.textColor = UIColor.black
             remainingTimeLabel.textColor = UIColor.black
+            myPlayer.isLandscape = false
             self.navigationController?.navigationBar.isHidden = false
             searchTextField.isHidden = false
             searchButton.isHidden = false
@@ -152,18 +133,8 @@ class ViewController: UIViewController {
     override var prefersStatusBarHidden: Bool {
         return UIDevice.current.orientation.isLandscape
     }
-    override func viewDidLayoutSubviews() {
-        videoLayer?.frame = centerView.bounds
-        centerLabel.center = centerView.center
-    }
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        setupNavigationColor()
-        setupButtons()
-        setupGesture()
-        setupCenterLabel()
+    func setupSliderTarget(){
         videoProgressSlider.addTarget(self, action: #selector(onValueChange), for: .valueChanged)
-        // Do any additional setup after loading the view, typically from a nib.
     }
     func setupCenterLabel()  {
         centerLabel = UILabel(frame: CGRect(x: centerView.center.x, y: centerView.center.y, width: 200, height: 50))
@@ -178,7 +149,7 @@ class ViewController: UIViewController {
         view.addGestureRecognizer(tapGesture)
     }
     @objc func myviewTapped(_ sender: UITapGestureRecognizer) {
-        if isLandscape {
+        if  myPlayer.isLandscape {
             isButtonAlpha = !isButtonAlpha
             if isButtonAlpha {
                 for b in buttons {
@@ -217,63 +188,15 @@ class ViewController: UIViewController {
         buttons.append(fullButton)
     }
     @objc func onValueChange() {
-        if let videoPlayer = self.player {
-            let cmTimeConvert: CMTime = CMTimeMake(Int64(self.videoProgressSlider.value * 1000), 1000)
-            videoPlayer.seek(to: cmTimeConvert, toleranceBefore: kCMTimeZero, toleranceAfter: kCMTimeZero)
-        }
+        let cmTimeConvert: CMTime = CMTimeMake(Int64(self.videoProgressSlider.value * 1000), 1000)
+        myPlayer.seekTo(cmTime: cmTimeConvert)
     }
-    func registObseverToPlayer(change: @escaping (_ time: CMTime)->Void) {
-        if let videoPlayer = player {
-            let interval = CMTime(seconds: 1.0, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-            let mainQueue = DispatchQueue.main
-            playerObsever = videoPlayer.addPeriodicTimeObserver(forInterval: interval, queue: mainQueue) { (time) in
-                change(time)
-            }
-        }
-    }
-    func removeCurrentPlayerObseve (){
-        if let videoPlayer = player {
-            videoPlayer.removeTimeObserver(playerObsever)
-            self.playerObsever = nil
-        }
-    }
+    
     func setupNavigationColor() {
         self.navigationItem.title = "Video Player"
         self.navigationController?.navigationBar.tintColor = UIColor.white
         self.navigationController?.navigationBar.titleTextAttributes = [NSAttributedStringKey.foregroundColor: UIColor.white]
         self.navigationController?.navigationBar.barTintColor = UIColor(red: 63/255, green: 81/255, blue: 181/255, alpha: 1)
     }
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-    func playVideoURL(url: URL){
-        if videoLayer != nil {
-            videoLayer?.removeFromSuperlayer()
-        }
-        player?.removeTimeObserver(playerObsever)
-        if AVAsset(url: url).isPlayable {
-            player = AVPlayer(url: url)
-            videoLayer = AVPlayerLayer(player: player)
-            videoLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
-            videoLayer?.frame = centerView.bounds
-            centerView.layer.addSublayer(videoLayer!)
-            registObseverToPlayer { [weak self] (time) in
-                if let videoPlayer = self?.player {
-                    let playerCurrentTime = Int(CMTimeGetSeconds(videoPlayer.currentTime()))
-                    let totalDurationTime  = Int(CMTimeGetSeconds((videoPlayer.currentItem?.duration)!))
-                    let remainTime = totalDurationTime - playerCurrentTime
-                    self?.currentTimeLabel.text = playerCurrentTime.asTimeString()
-                    self?.remainingTimeLabel.text = remainTime.asTimeString()
-                    self?.videoProgressSlider.maximumValue = Float(totalDurationTime)
-                    self?.videoProgressSlider.minimumValue = 0
-                    self?.videoProgressSlider.value = Float(playerCurrentTime)
-                }
-            }
-            player?.play()
-            isPlaying = true
-        }
-    }
-    
 }
 

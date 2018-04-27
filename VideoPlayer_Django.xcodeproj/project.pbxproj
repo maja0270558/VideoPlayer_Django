@@ -13,6 +13,7 @@
 		EBA7BD932092B3B10092409C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = EBA7BD922092B3B10092409C /* Assets.xcassets */; };
 		EBA7BD962092B3B10092409C /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = EBA7BD942092B3B10092409C /* LaunchScreen.storyboard */; };
 		EBA7BD9E2092CDDE0092409C /* TimeExtention.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA7BD9D2092CDDE0092409C /* TimeExtention.swift */; };
+		EBA7BDA22093127C0092409C /* DjangoPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA7BDA12093127C0092409C /* DjangoPlayer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,7 @@
 		EBA7BD952092B3B10092409C /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		EBA7BD972092B3B10092409C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		EBA7BD9D2092CDDE0092409C /* TimeExtention.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeExtention.swift; sourceTree = "<group>"; };
+		EBA7BDA12093127C0092409C /* DjangoPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DjangoPlayer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -58,6 +60,7 @@
 			children = (
 				EBA7BD8B2092B3AE0092409C /* AppDelegate.swift */,
 				EBA7BD8D2092B3AE0092409C /* ViewController.swift */,
+				EBA7BDA12093127C0092409C /* DjangoPlayer.swift */,
 				EBA7BD9D2092CDDE0092409C /* TimeExtention.swift */,
 				EBA7BD8F2092B3AE0092409C /* Main.storyboard */,
 				EBA7BD922092B3B10092409C /* Assets.xcassets */,
@@ -139,6 +142,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EBA7BD8E2092B3AE0092409C /* ViewController.swift in Sources */,
+				EBA7BDA22093127C0092409C /* DjangoPlayer.swift in Sources */,
 				EBA7BD8C2092B3AE0092409C /* AppDelegate.swift in Sources */,
 				EBA7BD9E2092CDDE0092409C /* TimeExtention.swift in Sources */,
 			);
