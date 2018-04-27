@@ -251,6 +251,7 @@ class ViewController: UIViewController {
         if videoLayer != nil {
             videoLayer?.removeFromSuperlayer()
         }
+        player?.removeTimeObserver(playerObsever)
         if AVAsset(url: url).isPlayable {
             player = AVPlayer(url: url)
             videoLayer = AVPlayerLayer(player: player)
