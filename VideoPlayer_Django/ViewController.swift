@@ -50,7 +50,7 @@ class ViewController: UIViewController {
     var buttons = [UIButton]()
     @IBAction func searchURLAction(_ sender: UIButton) {
         if let urlString = searchTextField.text  , urlString != "" {
-            if let searchURL = URL(string: "https://s3-ap-northeast-1.amazonaws.com/mid-exam/Video/taeyeon.mp4"/*searchTextField.text!*/) {
+            if let searchURL = URL(string: searchTextField.text!) {
                 playVideoURL(url: searchURL)
             }
         }
@@ -251,25 +251,27 @@ class ViewController: UIViewController {
         if videoLayer != nil {
             videoLayer?.removeFromSuperlayer()
         }
-        player = AVPlayer(url: url)
-        videoLayer = AVPlayerLayer(player: player)
-        videoLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
-        videoLayer?.frame = centerView.bounds
-        centerView.layer.addSublayer(videoLayer!)
-        registObseverToPlayer { [weak self] (time) in
-            if let videoPlayer = self?.player {
-                let playerCurrentTime = Int(CMTimeGetSeconds(videoPlayer.currentTime()))
-                let totalDurationTime  = Int(CMTimeGetSeconds((videoPlayer.currentItem?.duration)!))
-                let remainTime = totalDurationTime - playerCurrentTime
-                self?.currentTimeLabel.text = playerCurrentTime.asTimeString()
-                self?.remainingTimeLabel.text = remainTime.asTimeString()
-                self?.videoProgressSlider.maximumValue = Float(totalDurationTime)
-                self?.videoProgressSlider.minimumValue = 0
-                self?.videoProgressSlider.value = Float(playerCurrentTime)
+        if AVAsset(url: url).isPlayable {
+            player = AVPlayer(url: url)
+            videoLayer = AVPlayerLayer(player: player)
+            videoLayer?.videoGravity = AVLayerVideoGravity.resizeAspectFill
+            videoLayer?.frame = centerView.bounds
+            centerView.layer.addSublayer(videoLayer!)
+            registObseverToPlayer { [weak self] (time) in
+                if let videoPlayer = self?.player {
+                    let playerCurrentTime = Int(CMTimeGetSeconds(videoPlayer.currentTime()))
+                    let totalDurationTime  = Int(CMTimeGetSeconds((videoPlayer.currentItem?.duration)!))
+                    let remainTime = totalDurationTime - playerCurrentTime
+                    self?.currentTimeLabel.text = playerCurrentTime.asTimeString()
+                    self?.remainingTimeLabel.text = remainTime.asTimeString()
+                    self?.videoProgressSlider.maximumValue = Float(totalDurationTime)
+                    self?.videoProgressSlider.minimumValue = 0
+                    self?.videoProgressSlider.value = Float(playerCurrentTime)
+                }
             }
+            player?.play()
+            isPlaying = true
         }
-        player?.play()
-        isPlaying = true
     }
     
 }
